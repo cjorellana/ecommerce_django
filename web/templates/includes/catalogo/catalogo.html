@@ -4,7 +4,11 @@
         <div class="sectgl prod-i">
             <div class="prod-i-top">
                 <a class="prod-i-img" href="#">
-                    <img src="https://via.placeholder.com/250" alt="">
+                    {% if producto.imagen %}
+                        <img src="{{ producto.imagen.url }}" alt="">
+                    {% else %}
+                        <img src="https://via.placeholder.com/250" alt="">
+                    {% endif %}
                 </a>
                 <div class="prod-i-actions">
                     <div class="prod-i-actions-in">
