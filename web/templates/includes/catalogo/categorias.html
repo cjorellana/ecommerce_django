@@ -2,13 +2,15 @@
     <h3 class="widgettitle">Categorias</h3>
     <div class="section-sb-current">
         <ul class="section-sb-list">
+            {% for categoria in categorias %}
             <li>
                 <a href="#">
-                    <span class="section-sb-label">Polos 
-                        <span class="count">3</span>
+                    <span class="section-sb-label">{{ categoria.nombre }} 
+                        <span class="count">{{ categoria.producto_set.all.count }}</span>
                     </span>
                 </a>
             </li>
+            {% endfor %}
         </ul>
     </div>
 </div>

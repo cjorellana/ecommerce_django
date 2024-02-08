@@ -5,11 +5,11 @@ from .models import Categoria,Producto
 
 # Create your views here.
 def index(request):
-    #categorias = Categoria.objects.all()
+    categorias = Categoria.objects.all()
     productos = Producto.objects.all()
     print(productos)
     context = {
-        #'categorias':categorias,
+        'categorias':categorias,
         'productos':productos
     }
     return render(request, 'index.html', context)
