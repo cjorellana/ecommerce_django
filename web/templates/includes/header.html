@@ -8,7 +8,7 @@
     No Space
     --><div class="h-shop">
 
-        <form method="post" action="#" class="h-search" id="h-search">
+        <form method="post" action="{% url 'web:productoPorNombre' %}" class="h-search" id="h-search">
             {% csrf_token %}
             <input type="text" name="nombre" placeholder="Search...">
             <button type="submit"><i class="ion-search"></i></button>
