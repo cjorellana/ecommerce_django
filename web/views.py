@@ -13,6 +13,21 @@ def index(request):
         'productos':productos
     }
     return render(request, 'index.html', context)
+
+
+#productos por categoria
+def productosPorCategoria(request, id):
+    objcategoria = Categoria.objects.get(id=id)
+    productos = objcategoria.producto_set.all()
+    #productos = Producto.objects.filter(categoria=objcategoria)
+
+    categorias = Categoria.objects.all()
+
+    context = {
+        'categorias':categorias,
+        'productos':productos
+    }
+    return render(request, 'index.html', context)
     
 #busqueda de producto
 def buscar(request):
