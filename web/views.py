@@ -1,4 +1,4 @@
-from django.shortcuts import render,get_list_or_404
+from django.shortcuts import render,get_object_or_404
 
 from .models import Categoria,Producto
 
@@ -47,7 +47,7 @@ def detalle(request, id):
 
 
     #objproducto = Producto.objects.get(id=id)
-    objproducto = get_list_or_404(Producto, id=id)
+    objproducto = get_object_or_404(Producto, pk=id)
     
     context = {        
         'producto': objproducto
