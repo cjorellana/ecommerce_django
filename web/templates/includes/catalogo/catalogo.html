@@ -3,7 +3,7 @@
     <article class="cf-sm-6 cf-md-6 cf-lg-6 col-xs-6 col-sm-6 col-md-6 col-lg-6 sectgl-item">
         <div class="sectgl prod-i">
             <div class="prod-i-top">
-                <a class="prod-i-img" href="#">
+                <a class="prod-i-img" href="{% url 'web:producto' producto.id %}">
                     {% if producto.imagen %}
                         <img src="{{ producto.imagen.url }}" alt="">
                     {% else %}
