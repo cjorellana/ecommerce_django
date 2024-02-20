@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render,get_list_or_404
 
 from .models import Categoria,Producto
 
@@ -41,4 +41,16 @@ def buscar(request):
         'productos':productos
     }
     return render(request, 'index.html', context)
+
+#detalle de producto
+def detalle(request, id):
+
+
+    #objproducto = Producto.objects.get(id=id)
+    objproducto = get_list_or_404(Producto, id=id)
     
+    context = {        
+        'producto': objproducto
+    }
+
+    return render(request, 'producto.html', context)
