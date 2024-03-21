@@ -43,6 +43,8 @@ def buscar(request):
     return render(request, 'index.html', context)
 
 #detalle de producto
+
+
 def detalle(request, id):
 
 
@@ -54,3 +56,22 @@ def detalle(request, id):
     }
 
     return render(request, 'producto.html', context)
+
+
+""" Carrito  """
+
+from .carrito import Cart
+
+def carrito(request):
+    return render(request, 'carrito.html')
+
+def add_cart(request, id):
+    #cantidad = int(request.POST['cantidad'])
+    cantidad=1
+
+    objProducto = Producto.objects.get(pk=id)
+    carritoProducto = Cart(request)
+    #print(objProducto.Categoria)
+    carritoProducto.add(objProducto, cantidad)
+
+    return render(request, 'carrito.html')
