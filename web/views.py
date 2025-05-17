@@ -31,7 +31,7 @@ def productosPorCategoria(request, id):
     
 #busqueda de producto
 def buscar(request):
-    nombre = request.POST['nombre']
+    nombre = request.POST.get('nombre', '')
     productos = Producto.objects.filter(nombre__icontains=nombre)
 
     categorias = Categoria.objects.all()
