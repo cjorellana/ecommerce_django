@@ -7,7 +7,7 @@ from .models import Categoria,Producto
 def index(request):
     categorias = Categoria.objects.all()
     productos = Producto.objects.all()
-    print(productos)
+    #print(productos)
     context = {
         'categorias':categorias,
         'productos':productos
