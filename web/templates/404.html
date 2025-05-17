@@ -1,0 +1,13 @@
+{% extends 'layout.html' %}
+{% load static %}
+{% block content %}
+<div class="container text-center" style="padding: 60px 0;">
+    <h1 style="font-size: 6rem; color: #e74c3c;">404</h1>
+    <h2>Página no encontrada</h2>
+    <p>Lo sentimos, la página que buscas no existe o ha sido movida.</p>
+    <a href="/" class="btn btn-primary" style="margin-top: 20px;">Volver al inicio</a>
+    <div style="margin-top: 40px;">
+        <img src="{% static 'img/250x250.svg' %}" alt="No encontrado" style="max-width:150px; opacity:0.7;">
+    </div>
+</div>
+{% endblock %}
