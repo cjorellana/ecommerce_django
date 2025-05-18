@@ -1,13 +1,29 @@
 {% extends 'layout.html' %}
 {% load static %}
 {% block content %}
-<div class="container text-center" style="padding: 60px 0;">
-    <h1 style="font-size: 6rem; color: #e74c3c;">404</h1>
-    <h2>Página no encontrada</h2>
-    <p>Lo sentimos, la página que buscas no existe o ha sido movida.</p>
-    <a href="/" class="btn btn-primary" style="margin-top: 20px;">Volver al inicio</a>
-    <div style="margin-top: 40px;">
-        <img src="{% static 'img/250x250.svg' %}" alt="No encontrado" style="max-width:150px; opacity:0.7;">
+<div class="page-404">
+    <div class="container stylization maincont">
+        <div class="row">
+            <div class="col-md-12 page-404-cont">
+                <h1 class="mb35">404</h1>
+                <h3 class="mb35">¡Ups! Página no encontrada</h3>
+                <p class="mb35">Lo sentimos, la página que buscas no existe o ha sido movida.</p>
+                <img class="mb35" src="{% static 'img/404.png' %}" alt="" style="width: 50%; height: auto;">
+                <div class="page-404-srch">
+                    <form action="{% url 'web:buscar' %}" method="POST">
+                        {% csrf_token %}
+                        <input type="text" name="nombre" placeholder="Buscar productos...">
+                        <button type="submit"><i class="icon ion-search"></i></button>
+                    </form>
+                </div>
+                <p class="mb35">o</p>
+                <a href="/" class="btn btn-primary">Volver al inicio</a>
+                <div style="margin-top: 20px;">
+                    <p>Otras opciones:</p>
+                    <a href="javascript:history.back()" class="btn-link">Volver a la página anterior</a>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
