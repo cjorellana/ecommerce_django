@@ -1,5 +1,5 @@
 <li class="h-cart">
-    <a class="cart-contents" href="cart.html">
+    <a class="cart-contents" href="{% url 'web:carrito' %}" title="Carrito" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
         <p class="h-cart-icon">
             <i class="ion-android-cart"></i>
             <span>1</span>
@@ -22,7 +22,7 @@
             </ul>
             <p class="total"><b>Subtotal:</b> $100</p>
             <p class="buttons">
-                <a href="#" class="button">Ver Carrito</a>
+                <a href="{% url 'web:carrito' %}" class="button">Ver Carrito</a>
                 <a href="#" class="button">Pedido</a>
             </p>
         </div>
