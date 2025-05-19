@@ -66,7 +66,10 @@ def carrito(request):
 
 def add_cart(request, id):
     #cantidad = int(request.POST['cantidad'])
-    cantidad=1
+    if request.method == 'POST':
+        cantidad = int(request.POST['cantidad'])
+    else:
+        cantidad = 1
 
     objProducto = Producto.objects.get(pk=id)
     carritoProducto = Cart(request)
