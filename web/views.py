@@ -59,7 +59,6 @@ def detalle(request, id):
 
 
 """ Carrito  """
-
 from .carrito import Cart
 
 def carrito(request):
