@@ -9,16 +9,25 @@ class Cart:
 
     def add(self, producto, cantidad):
 
-        self.cart[producto.id] = {
-            "producto_id": producto.id,
-            "nombre": producto.nombre,
-            "cantidad": cantidad,
-            "precio": str(producto.precio),
-            "imagen": producto.imagen.url,
-            "categoria": producto.Categoria.nombre,
-            "subtotal": str(producto.precio * cantidad)
-        }
-
+        if str(producto.id) not in self.cart.keys():
+            # si el producto no existe en el carrito
+            self.cart[producto.id] = {
+                "producto_id": producto.id,
+                "nombre": producto.nombre,
+                "cantidad": cantidad,
+                "precio": str(producto.precio),
+                "imagen": producto.imagen.url,
+                "categoria": producto.Categoria.nombre,
+                "subtotal": str(producto.precio * cantidad)
+            }
+        else:
+            # si el producto ya existe en el carrito
+            for key, value in self.cart.items():
+                if key == str(producto.id):
+                    value["cantidad"] += cantidad
+                    value["subtotal"] = str(float(value["subtotal"]) + (float(producto.precio) * cantidad))
+                    break
+        
         self.save()
        
 
