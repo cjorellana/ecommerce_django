@@ -1,11 +1,14 @@
 {% load static %}
 <li class="h-cart">
-    <a class="cart-contents" href="{% url 'web:carrito' %}" title="Carrito" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    <a class="cart-contents" href="{% url 'web:carrito' %}" title="Carrito" 
+    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
         <p class="h-cart-icon">
             <i class="ion-android-cart"></i>
-            <span>1</span>
+            <span>
+                {{request.session.cart.items|length}}
+            </span>
         </p>
-        <p class="h-cart-total">$100</p>
+        <p class="h-cart-total">Q 100</p>
     </a>
     <div class="widget_shopping_cart">
         <div class="widget_shopping_cart_content">

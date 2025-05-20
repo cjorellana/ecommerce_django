@@ -45,12 +45,11 @@ function agregarAlCarrito(event, productoId, nombreProducto) {
     Swal.fire({
         title: 'Añadir al carrito',
         text: `¿Quieres añadir "${nombreProducto}" a tu carrito?`,
-        icon: 'question',
-        showCancelButton: true,
+        icon: 'question',        showCancelButton: true,
         confirmButtonColor: '#3085d6',
         cancelButtonColor: '#d33',
-        confirmButtonText: 'Sí, añadir',
-        cancelButtonText: 'Cancelar'
+        confirmButtonText: '✅ Sí, añadir',
+        cancelButtonText: '❌ Cancelar'
     }).then((result) => {
         if (result.isConfirmed) {
             // Obtener el formulario y configurar la URL
@@ -83,17 +82,15 @@ function agregarAlCarrito(event, productoId, nombreProducto) {
                             cartCountElement.textContent = data.cart_count;
                         }
                     }
-                    
-                    // Mostrar mensaje de éxito
+                      // Mostrar mensaje de éxito
                     Swal.fire({
                         title: '¡Añadido!',
                         text: data.message || `"${nombreProducto}" ha sido añadido a tu carrito.`,
                         icon: 'success',
-                        showCancelButton: true,
-                        confirmButtonColor: '#3085d6',
+                        showCancelButton: true,                        confirmButtonColor: '#3085d6',
                         cancelButtonColor: '#6c757d',
-                        confirmButtonText: 'Ir al carrito',
-                        cancelButtonText: 'Seguir comprando'
+                        confirmButtonText: '🛒 Ir al carrito',
+                        cancelButtonText: '🏠 Seguir comprando'
                     }).then((result) => {
                         if (result.isConfirmed) {
                             // Redirigir al carrito si el usuario lo desea
