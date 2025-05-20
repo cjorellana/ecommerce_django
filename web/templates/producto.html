@@ -68,22 +68,22 @@
                         {% csrf_token %}
                         <div class="variations">
                             <div class="variations-row">
-                                <div class="label"><label >Сolor</label></div>
+                                <div class="label"><label>Color</label></div>
                                 <div class="value">
-                                    <select>
-                                        <option value="">Choose an option</option>
-                                        <option value="blue">Blue</option>
-                                        <option value="green">Green</option>
-                                        <option value="yellow">Yellow</option>
+                                    <select name="color">
+                                        <option value="">Selecciona una opción</option>
+                                        <option value="blue">Azul</option>
+                                        <option value="green">Verde</option>
+                                        <option value="yellow">Amarillo</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
                         <button type="submit" class="button"><i class="icon ion-android-cart"></i> Agregar al Carrito</button>
                         <p class="qnt-wrap prod-li-qnt">
-                            <a href="#" class="qnt-plus prod-li-plus"><i class="icon ion-arrow-up-b"></i></a>
-                            <input type="text" name="cantidad" value="1">
-                            <a href="#" class="qnt-minus prod-li-minus"><i class="icon ion-arrow-down-b"></i></a>
+                            <a href="#" class="qnt-plus prod-li-plus" onclick="incrementQuantity(event)"><i class="icon ion-arrow-up-b"></i></a>
+                            <input type="text" name="cantidad" value="1" id="quantity-input">
+                            <a href="#" class="qnt-minus prod-li-minus" onclick="decrementQuantity(event)"><i class="icon ion-arrow-down-b"></i></a>
                         </p>
                     </form>
                 </div>
@@ -97,8 +97,19 @@
         </div>
     </div>
 
+    <script>
+    function incrementQuantity(event) {
+        event.preventDefault();
+        var input = document.getElementById('quantity-input');
+        input.value = parseInt(input.value) + 1 || 1;
+    }
 
-    
+    function decrementQuantity(event) {
+        event.preventDefault();
+        var input = document.getElementById('quantity-input');
+        input.value = Math.max(1, (parseInt(input.value) - 1 || 1));
+    }
+    </script>
 
 </article>
 
