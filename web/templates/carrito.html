@@ -73,9 +73,8 @@
         <div class="coupon">
             <input type="text" placeholder="Código Cupon">
             <input type="submit" class="button" value="Aplicar">
-        </div>
-        <div class="cart-collaterals">
-            <a href="#" class="checkout-button button" style="margin-left: 10px; display: inline-block;">Limpiar Carrito</a>
+        </div>        <div class="cart-collaterals">
+            <a href="#" onclick="confirmarLimpiarCarrito(event)" class="checkout-button button" style="margin-left: 10px; display: inline-block;">Limpiar Carrito</a>
             <a href="#" class="checkout-button button">Realizar Pedido</a>
             <div class="order-total">
                 <p class="cart-totals-ttl">Total</p>
@@ -104,6 +103,38 @@ function confirmarEliminar(event, id, nombre) {
             var form = document.createElement('form');
             form.method = 'POST';
             form.action = "{% url 'web:eliminarProductoCarrito' 0 %}".replace("0", id);
+            
+            // Añadir el token CSRF
+            var csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = 'csrfmiddlewaretoken';
+            csrfToken.value = '{{ csrf_token }}';
+            form.appendChild(csrfToken);
+            
+            document.body.appendChild(form);
+            form.submit();
+        }    });
+}
+
+function confirmarLimpiarCarrito(event) {
+    event.preventDefault(); // Detiene la acción predeterminada del enlace
+    
+    Swal.fire({
+        title: '¿Limpiar carrito?',
+        text: "Se eliminarán todos los productos del carrito",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ff3100',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, limpiar',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Para mayor seguridad, creamos una forma de POST para limpiar el carrito
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = "{% url 'web:limpiarCarrito' %}";
             
             // Añadir el token CSRF
             var csrfToken = document.createElement('input');

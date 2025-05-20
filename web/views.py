@@ -84,3 +84,10 @@ def eliminar_producto_carrito(request, producto_id):
     carritoProducto.remove(objProducto)
 
     return render(request, 'carrito.html')
+
+def limpiar_carrito(request):  
+    print("limpiar carrito")  
+    carritoProducto = Cart(request)
+    carritoProducto.clear()
+
+    return render(request, 'carrito.html')

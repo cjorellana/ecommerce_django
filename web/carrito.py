@@ -43,8 +43,9 @@ class Cart:
             self.save()
     
     def clear(self):
-        del self.session["cart"]
-        self.save()
+        self.session["cart"] = {}
+        #del self.session["cart"]
+        #self.save()
 
  
 
