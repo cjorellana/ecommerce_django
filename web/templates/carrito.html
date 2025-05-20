@@ -20,9 +20,8 @@
                                 <a href="#">{{value.categoria}}</a>
                             </p>
                             <h3><a href="product.html">{{ value.nombre }}</a></h3>
-                        </div><!--
-        No Space
-        --><div class="prod-li-prices">
+                        </div><!-- No Space -->
+                        <div class="prod-li-prices">
                         <div class="prod-li-price-wrap">
                             <p>Precio</p>
                             <p class="prod-li-price">Q {{value.precio}}</p>
@@ -38,18 +37,15 @@
                             <p>Total</p>
                             <p class="prod-li-total">Q {{value.subtotal}}</p>
                         </div>
-                    </div><!--
-    No Space
-    --></div>
-                    <div class="prod-li-info">
-                        <div class="prod-li-rating-wrap">
+                    </div><!-- No Space--></div>
+                    <div class="prod-li-info">                        <div class="prod-li-rating-wrap">
                             <p data-rating="5" class="prod-li-rating">
                                 <i class="rating-ico" title="1"></i><i class="rating-ico" title="2"></i><i class="rating-ico" title="3"></i><i class="rating-ico" title="4"></i><i class="rating-ico" title="5"></i>
                             </p>
                             <p class="prod-li-rating-count">12</p>
                         </div>
-                        <p class="prod-li-add">
-                            <a href="{% url 'web:eliminarProductoCarrito' value.producto_id %}" class="button hover-label prod-addbtn"><i class="icon ion-close-round"></i><span>Eliminar</span></a>
+                        <p class="prod-li-add">                                                        
+                            <a href="#" onclick="confirmarEliminar(event, '{{ value.producto_id }}', '{{ value.nombre }}')" class="button hover-label prod-addbtn"><i class="icon ion-close-round"></i><span>Eliminar</span></a>
                         </p>
                         <p class="prod-li-information">
                             <a href="#" class="hover-label"><i class="icon ion-more"></i><span>Show Information</span></a>
@@ -83,12 +79,46 @@
             <a href="#" class="checkout-button button">Realizar Pedido</a>
             <div class="order-total">
                 <p class="cart-totals-ttl">Total</p>
-                <p class="cart-totals-val">${{request.session.cartMontoTotal}}</p>
-            </div>
+                <p class="cart-totals-val">${{request.session.cartMontoTotal}}</p>            </div>
         </div>
     </div>
 
 
 </div>
+
+<script>
+function confirmarEliminar(event, id, nombre) {
+    event.preventDefault(); // Detiene la acción predeterminada del enlace
+      Swal.fire({
+        title: '¿Eliminar producto?',
+        text: "¿Quieres eliminar '" + nombre + "' del carrito?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#ff3100',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true
+    }).then((result) => {        if (result.isConfirmed) {
+            // Para mayor seguridad, creamos una forma de POST para eliminar el producto
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = "{% url 'web:eliminarProductoCarrito' 0 %}".replace("0", id);
+            
+            // Añadir el token CSRF
+            var csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = 'csrfmiddlewaretoken';
+            csrfToken.value = '{{ csrf_token }}';
+            form.appendChild(csrfToken);
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+</script>
+
+
 
 {% endblock %}
