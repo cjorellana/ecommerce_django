@@ -77,3 +77,10 @@ def add_cart(request, id):
     carritoProducto.add(objProducto, cantidad)
 
     return render(request, 'carrito.html')
+
+def eliminar_producto_carrito(request, producto_id):
+    objProducto = Producto.objects.get(pk=producto_id)
+    carritoProducto = Cart(request)
+    carritoProducto.remove(objProducto)
+
+    return render(request, 'carrito.html')
