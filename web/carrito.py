@@ -3,9 +3,18 @@ class Cart:
         self.request = request
         self.session = request.session
         cart = self.session.get("cart")
+
+        montoTotal = self.session.get("cartMontoTotal")
+
+        # si el carrito no existe, lo crea
         if not cart:
             cart = self.session["cart"] = {}
+            # si el monto total no existe, lo crea
+            montoTotal = self.session["cartMontoTotal"] = "0"
+
+
         self.cart = cart
+        self.montoTotal = float(montoTotal)
 
     def add(self, producto, cantidad):
 
@@ -32,8 +41,14 @@ class Cart:
        
 
     def save(self):
-        """ guarda cambios en el carrito """
-        self.session["cart"]= self.cart
+        """ guarda cambios en el carrito """  
+        # se suma el subtotal de cada producto al monto total      
+        montoTotal = 0
+        for key, value in self.cart.items():
+            montoTotal += float(value["subtotal"])
+
+        self.session["cartMontoTotal"] = montoTotal
+        self.session["cart"]= self.cart       
         self.session.modified = True
 
     def remove(self, product):
@@ -44,6 +59,7 @@ class Cart:
     
     def clear(self):
         self.session["cart"] = {}
+        self.session["cartMontoTotal"] = "0"
         #del self.session["cart"]
         #self.save()
 
