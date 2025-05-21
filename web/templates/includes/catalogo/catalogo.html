@@ -73,14 +73,17 @@ function agregarAlCarrito(event, productoId, nombreProducto) {
                 }
                 return response.json();
             })
-            .then(data => {
-                if (data.success) {
+            .then(data => {                if (data.success) {
                     // Actualizar contador del carrito si existe
                     if (data.cart_count !== undefined) {
-                        const cartCountElement = document.querySelector('.header-cart-count');
+                        // Actualizar el contador del carrito en el ícono
+                        const cartCountElement = document.querySelector('.h-cart-icon span');
                         if (cartCountElement) {
                             cartCountElement.textContent = data.cart_count;
                         }
+                        
+                        // Actualizar el mini-carrito sin recargar la página
+                        actualizarMiniCarrito();
                     }
                       // Mostrar mensaje de éxito
                     Swal.fire({
@@ -112,9 +115,48 @@ function agregarAlCarrito(event, productoId, nombreProducto) {
                     text: 'Ha ocurrido un problema al añadir el producto al carrito. Por favor, inténtalo de nuevo.',
                     icon: 'error',
                     confirmButtonColor: '#3085d6'
-                });
-            });
+                });            });
         }
+    });
+}
+
+// Función para actualizar el contenido del mini-carrito
+function actualizarMiniCarrito() {
+    // Hacer una petición para obtener los datos actualizados del carrito
+    fetch('{% url "web:carrito" %}', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.text())
+    .then(html => {
+        // Extraer solo la parte del mini-carrito del HTML completo
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // Actualizar el contador en el icono del carrito
+        const cartCount = doc.querySelector('.h-cart-icon span').textContent.trim();
+        document.querySelector('.h-cart-icon span').textContent = cartCount;
+        
+        // Actualizar el subtotal en el icono del carrito
+        const cartTotal = doc.querySelector('.h-cart-total').textContent.trim();
+        document.querySelector('.h-cart-total').textContent = cartTotal;
+        
+        // Buscar el contenido del carrito en el HTML
+        const cartList = doc.querySelector('.cart_list');
+        if (cartList) {
+            document.querySelector('.cart_list').innerHTML = cartList.innerHTML;
+        }
+        
+        // Actualizar el subtotal en el dropdown del carrito
+        const totalElement = doc.querySelector('.widget_shopping_cart_content .total');
+        if (totalElement) {
+            document.querySelector('.widget_shopping_cart_content .total').innerHTML = totalElement.innerHTML;
+        }
+    })
+    .catch(error => {
+        console.error('Error al actualizar el mini-carrito:', error);
     });
 }
 </script>

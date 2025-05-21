@@ -63,6 +63,8 @@ def detalle(request, id):
 from .carrito import Cart
 
 def carrito(request):
+    # Si es una solicitud AJAX, simplemente renderizar la página
+    # La extracción del contenido del mini-carrito se hace en el cliente
     return render(request, 'carrito.html')
 
 def add_cart(request, id):
@@ -81,13 +83,17 @@ def add_cart(request, id):
         objProducto = Producto.objects.get(pk=id)
         carritoProducto = Cart(request)
         carritoProducto.add(objProducto, cantidad)
-        
-        # Si la solicitud es AJAX (verificamos el encabezado X-Requested-With)
+          # Si la solicitud es AJAX (verificamos el encabezado X-Requested-With)
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            # Calcular monto total del carrito
+            monto_total = sum(float(item['subtotal']) for item in carritoProducto.cart.values())
+            request.session['cartMontoTotal'] = monto_total
+            
             return JsonResponse({
                 'success': True, 
                 'message': f'{objProducto.nombre} añadido al carrito',
-                'cart_count': len(carritoProducto.cart)
+                'cart_count': len(carritoProducto.cart),
+                'cart_total': monto_total
             })
         
         # Para solicitudes normales, redirigir al carrito
