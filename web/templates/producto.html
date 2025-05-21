@@ -58,19 +58,18 @@
                 <p class="prod-rating-count">7</p>
             </div>
             <p class="prod-categs"><a href="#">Polos</a></p>
-            <h1>{{ producto.nombre }}</h1>
-            <div class="variations_form cart">
+            <h1>{{ producto.nombre }}</h1>            <div class="variations_form cart" x-data="productoDetalle('{{ producto.id }}', '{{ producto.nombre }}')">
                 <p class="prod-price">Q {{ producto.precio }}</p>
                 <p class="prod-excerpt">{{ producto.descripcion }} 
                     <a id="prod-showdesc" class="prod-excerpt-more" href="#">read more</a></p>
                 <div class="prod-add">
-                    <form action="{% url 'web:add_cart' producto.id %}" method="post">
+                    <form @submit.prevent="agregarAlCarrito">
                         {% csrf_token %}
                         <div class="variations">
                             <div class="variations-row">
                                 <div class="label"><label>Color</label></div>
                                 <div class="value">
-                                    <select name="color">
+                                    <select name="color" x-model="color">
                                         <option value="">Selecciona una opción</option>
                                         <option value="blue">Azul</option>
                                         <option value="green">Verde</option>
@@ -81,9 +80,9 @@
                         </div>
                         <button type="submit" class="button"><i class="icon ion-android-cart"></i> Agregar al Carrito</button>
                         <p class="qnt-wrap prod-li-qnt">
-                            <a href="#" class="qnt-plus prod-li-plus" onclick="incrementQuantity(event)"><i class="icon ion-arrow-up-b"></i></a>
-                            <input type="text" name="cantidad" value="1" id="quantity-input">
-                            <a href="#" class="qnt-minus prod-li-minus" onclick="decrementQuantity(event)"><i class="icon ion-arrow-down-b"></i></a>
+                            <a href="#" class="qnt-plus prod-li-plus" @click.prevent="incrementar"><i class="icon ion-arrow-up-b"></i></a>
+                            <input type="text" name="cantidad" x-model="cantidad" id="quantity-input">
+                            <a href="#" class="qnt-minus prod-li-minus" @click.prevent="decrementar"><i class="icon ion-arrow-down-b"></i></a>
                         </p>
                     </form>
                 </div>
@@ -95,19 +94,130 @@
                 </dl>
             </div>
         </div>
-    </div>
-
-    <script>
-    function incrementQuantity(event) {
-        event.preventDefault();
-        var input = document.getElementById('quantity-input');
-        input.value = parseInt(input.value) + 1 || 1;
+    </div>    <script>
+    function productoDetalle(id, nombre) {
+        return {
+            id: id,
+            nombre: nombre,
+            cantidad: 1,
+            color: '',
+            
+            incrementar() {
+                this.cantidad = parseInt(this.cantidad) + 1 || 1;
+            },
+            
+            decrementar() {
+                this.cantidad = Math.max(1, parseInt(this.cantidad) - 1 || 1);
+            },
+            
+            agregarAlCarrito() {
+                // if (!this.color) {
+                //     Swal.fire({
+                //         title: 'Selecciona un color',
+                //         text: 'Por favor selecciona un color antes de agregar al carrito',
+                //         icon: 'warning',
+                //         confirmButtonColor: '#3085d6'
+                //     });
+                //     return;
+                // }
+                  Swal.fire({
+                    title: 'Añadir al carrito',
+                    text: `¿Quieres añadir ${this.cantidad} ${this.cantidad > 1 ? 'unidades' : 'unidad'} de "${this.nombre}"${this.color ? ' (Color: ' + this.color + ')' : ''} a tu carrito?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: '✅ Sí, añadir',
+                    cancelButtonText: '❌ Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const formData = new FormData();
+                        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+                        formData.append('cantidad', this.cantidad);
+                        formData.append('color', this.color);
+                        
+                        fetch('{% url "web:add_cart" producto.id %}', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRFToken': '{{ csrf_token }}'
+                            },
+                            credentials: 'same-origin'
+                        })
+                        .then(response => {
+                            if (!response.ok) throw new Error('Error HTTP: ' + response.status);
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                if (data.cart_count !== undefined) {
+                                    const span = document.querySelector('.h-cart-icon span');
+                                    if (span) span.textContent = data.cart_count;
+                                    actualizarMiniCarrito();
+                                }
+                                  Swal.fire({
+                                    title: '¡Añadido con éxito!',
+                                    text: data.message || `${this.cantidad} ${this.cantidad > 1 ? 'unidades' : 'unidad'} de "${this.nombre}" ${this.cantidad > 1 ? 'han sido añadidas' : 'ha sido añadida'} a tu carrito.`,
+                                    icon: 'success',
+                                    showCancelButton: true,
+                                    confirmButtonText: '🛒 Ir al carrito',
+                                    cancelButtonText: '🏠 Seguir comprando'
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        window.location.href = '{% url "web:carrito" %}';
+                                    }
+                                });
+                            } else {
+                                Swal.fire('Error', data.message || 'No se pudo añadir el producto.', 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error(error);
+                            Swal.fire('Error', 'Ha ocurrido un problema. Intenta nuevamente.', 'error');
+                        });
+                    }
+                });
+            }
+        }
     }
+    
+    // Función para actualizar el mini-carrito (duplicada de catalogo.html)
+    function actualizarMiniCarrito() {
+        fetch('{% url "web:carrito" %}', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
 
-    function decrementQuantity(event) {
-        event.preventDefault();
-        var input = document.getElementById('quantity-input');
-        input.value = Math.max(1, (parseInt(input.value) - 1 || 1));
+            const cartCount = doc.querySelector('.h-cart-icon span')?.textContent.trim();
+            if (cartCount) {
+                document.querySelector('.h-cart-icon span').textContent = cartCount;
+            }
+
+            const cartTotal = doc.querySelector('.h-cart-total')?.textContent.trim();
+            if (cartTotal) {
+                document.querySelector('.h-cart-total').textContent = cartTotal;
+            }
+
+            const cartList = doc.querySelector('.cart_list');
+            if (cartList) {
+                document.querySelector('.cart_list').innerHTML = cartList.innerHTML;
+            }
+
+            const totalElement = doc.querySelector('.widget_shopping_cart_content .total');
+            if (totalElement) {
+                document.querySelector('.widget_shopping_cart_content .total').innerHTML = totalElement.innerHTML;
+            }
+        })
+        .catch(error => {
+            console.error('Error al actualizar el mini-carrito:', error);
+        });
     }
     </script>
 
