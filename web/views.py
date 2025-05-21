@@ -147,3 +147,77 @@ def limpiar_carrito(request):
         })
         
     return redirect('web:carrito')
+
+def aumentar_cantidad(request, producto_id):
+    # Verificar que sea una solicitud POST
+    if request.method != 'POST':
+        return redirect('web:carrito')
+        
+    try:
+        objProducto = Producto.objects.get(pk=producto_id)
+        carritoProducto = Cart(request)
+        carritoProducto.add(objProducto, 1)  # Aumentamos en 1 la cantidad
+        
+        # Obtenemos los datos actualizados para responder
+        producto_carrito = carritoProducto.cart.get(str(producto_id))
+        monto_total = request.session.get('cartMontoTotal', 0)
+        
+        # Si la solicitud es AJAX
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True, 
+                'message': f'Cantidad aumentada',
+                'cantidad': producto_carrito['cantidad'],
+                'subtotal': producto_carrito['subtotal'],
+                'cart_total': monto_total
+            })
+            
+        return redirect('web:carrito')
+    except Producto.DoesNotExist:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'message': 'Producto no encontrado'}, status=404)
+        return redirect('web:carrito')
+
+def disminuir_cantidad(request, producto_id):
+    # Verificar que sea una solicitud POST
+    if request.method != 'POST':
+        return redirect('web:carrito')
+        
+    try:
+        objProducto = Producto.objects.get(pk=producto_id)
+        carritoProducto = Cart(request)
+        
+        # Verificamos si el producto está en el carrito
+        if str(producto_id) in carritoProducto.cart:
+            # Si solo hay 1, eliminamos el producto
+            if carritoProducto.cart[str(producto_id)]['cantidad'] <= 1:
+                carritoProducto.remove(objProducto)
+                
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': True, 
+                        'message': f'Producto eliminado del carrito',
+                        'eliminado': True,
+                        'cart_total': request.session.get('cartMontoTotal', 0)
+                    })
+            else:
+                # Disminuimos la cantidad
+                carritoProducto.disminuir(objProducto, 1)
+                producto_carrito = carritoProducto.cart.get(str(producto_id))
+                monto_total = request.session.get('cartMontoTotal', 0)
+                
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': True, 
+                        'message': f'Cantidad disminuida',
+                        'cantidad': producto_carrito['cantidad'],
+                        'subtotal': producto_carrito['subtotal'],
+                        'eliminado': False,
+                        'cart_total': monto_total
+                    })
+        
+        return redirect('web:carrito')
+    except Producto.DoesNotExist:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'message': 'Producto no encontrado'}, status=404)
+        return redirect('web:carrito')

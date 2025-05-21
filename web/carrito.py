@@ -38,8 +38,7 @@ class Cart:
                     break
         
         self.save()
-       
-
+    
     def save(self):
         """ guarda cambios en el carrito """  
         # se suma el subtotal de cada producto al monto total      
@@ -56,6 +55,15 @@ class Cart:
         if product_id in self.cart:
             del self.cart[product_id]
             self.save()
+    
+    def disminuir(self, producto, cantidad):
+        """Disminuye la cantidad de un producto en el carrito"""
+        for key, value in self.cart.items():
+            if key == str(producto.id):
+                value["cantidad"] -= cantidad
+                value["subtotal"] = str(float(value["precio"]) * value["cantidad"])
+                break
+        self.save()
     
     def clear(self):
         self.session["cart"] = {}

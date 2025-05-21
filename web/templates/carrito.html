@@ -7,9 +7,8 @@
         <li>Carrito</li>
     </ul>
     <div class="page-styling">
-        <div class="woocommerce prod-litems section-list">
-            {% for key,value in request.session.cart.items %}
-            <article class="prod-li sectls">
+        <div class="woocommerce prod-litems section-list">            {% for key,value in request.session.cart.items %}
+            <article class="prod-li sectls" data-producto-id="{{ value.producto_id }}">
                 <div class="prod-li-inner">
                     <a href="product.html" class="prod-li-img">
                         <img src="{{ value.imagen }}" alt="">
@@ -28,9 +27,9 @@
                         </div>
                         <div class="prod-li-qnt-wrap">
                             <p class="qnt-wrap prod-li-qnt">
-                                <a href="#" class="qnt-plus prod-li-plus"><i class="icon ion-arrow-up-b"></i></a>
-                                <input type="text" value="{{value.cantidad}}">
-                                <a href="#" class="qnt-minus prod-li-minus"><i class="icon ion-arrow-down-b"></i></a>
+                                <a href="#" class="qnt-plus prod-li-plus" onclick="aumentarCantidad(event, '{{ value.producto_id }}')"><i class="icon ion-arrow-up-b"></i></a>
+                                <input type="text" value="{{value.cantidad}}" readonly>
+                                <a href="#" class="qnt-minus prod-li-minus" onclick="disminuirCantidad(event, '{{ value.producto_id }}')"><i class="icon ion-arrow-down-b"></i></a>
                             </p>
                         </div>
                         <div class="prod-li-total-wrap">
@@ -87,6 +86,24 @@
 </div>
 
 <script>
+// Función para obtener el token CSRF de las cookies
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // ¿Este cookie tiene el nombre que buscamos?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+const csrftoken = getCookie('csrftoken');
+
 function confirmarEliminar(event, id, nombre) {
     event.preventDefault(); // Detiene la acción predeterminada del enlace
       Swal.fire({
@@ -147,6 +164,130 @@ function confirmarLimpiarCarrito(event) {
             document.body.appendChild(form);
             form.submit();
         }
+    });
+}
+
+// Función para aumentar la cantidad de un producto
+function aumentarCantidad(event, id) {
+    event.preventDefault();
+    
+    // Configurar la solicitud como AJAX
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', "{% url 'web:aumentarCantidad' 0 %}".replace("0", id), true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.setRequestHeader('X-CSRFToken', csrftoken);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            var response = JSON.parse(xhr.responseText);
+            if (response.success) {
+                // Actualizar la cantidad y el subtotal en la interfaz
+                var itemRow = document.querySelector(`[data-producto-id="${id}"]`);
+                if (itemRow) {
+                    var cantidadInput = itemRow.querySelector('input[type="text"]');
+                    var subtotalElement = itemRow.querySelector('.prod-li-total');
+                    var totalElement = document.querySelector('.cart-totals-val');
+                      cantidadInput.value = response.cantidad;
+                    subtotalElement.textContent = 'Q ' + response.subtotal;
+                    totalElement.textContent = 'Q ' + response.cart_total;
+                    
+                    // Actualizar el mini-carrito
+                    actualizarMiniCarrito();
+                }
+            }
+        }
+    };
+    xhr.send();
+}
+
+// Función para disminuir la cantidad de un producto
+function disminuirCantidad(event, id) {
+    event.preventDefault();
+    
+    // Configurar la solicitud como AJAX
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', "{% url 'web:disminuirCantidad' 0 %}".replace("0", id), true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.setRequestHeader('X-CSRFToken', csrftoken);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            var response = JSON.parse(xhr.responseText);
+            if (response.success) {                if (response.eliminado) {
+                    // Si el producto fue eliminado, actualizar primero el mini-carrito
+                    actualizarMiniCarrito(() => {
+                        // Luego recargar la página
+                        location.reload();
+                    });
+                } else {
+                    // Actualizar la cantidad y el subtotal en la interfaz
+                    var itemRow = document.querySelector(`[data-producto-id="${id}"]`);
+                    if (itemRow) {
+                        var cantidadInput = itemRow.querySelector('input[type="text"]');
+                        var subtotalElement = itemRow.querySelector('.prod-li-total');
+                        var totalElement = document.querySelector('.cart-totals-val');
+                          cantidadInput.value = response.cantidad;
+                        subtotalElement.textContent = 'Q ' + response.subtotal;
+                        totalElement.textContent = 'Q ' + response.cart_total;
+                        
+                        // Actualizar el mini-carrito
+                        actualizarMiniCarrito();
+                        
+                        // // Mostrar mensaje de éxito
+                        // Swal.fire({
+                        //     title: 'Cantidad actualizada',
+                        //     text: response.message,
+                        //     icon: 'success',
+                        //     timer: 1500,
+                        //     showConfirmButton: false
+                        // });
+                    }
+                }
+            }
+        }    };    xhr.send();
+}
+
+// Función para actualizar el mini-carrito
+function actualizarMiniCarrito(callback) {
+    fetch('{% url "web:carrito" %}', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.text())
+    .then(html => {
+        // Extraer solo la parte del mini-carrito del HTML completo
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // Actualizar el contador
+        const cartCount = doc.querySelector('.h-cart-icon span').textContent.trim();
+        document.querySelector('.h-cart-icon span').textContent = cartCount;
+        
+        // Actualizar el subtotal en el icono del carrito
+        const cartTotal = doc.querySelector('.h-cart-total').textContent.trim();
+        document.querySelector('.h-cart-total').textContent = cartTotal;
+        
+        // Actualizar la lista de productos
+        const cartList = doc.querySelector('.cart_list');
+        if (cartList) {
+            document.querySelector('.cart_list').innerHTML = cartList.innerHTML;
+        }
+        
+        // Actualizar el total dentro del dropdown
+        const totalElement = doc.querySelector('.widget_shopping_cart_content .total');
+        if (totalElement) {
+            document.querySelector('.widget_shopping_cart_content .total').innerHTML = totalElement.innerHTML;
+        }
+        
+        // Ejecutar el callback si existe
+        if (typeof callback === 'function') {
+            callback();
+        }
+    })
+    .catch(error => {
+        console.error('Error al actualizar el mini-carrito:', error);
     });
 }
 </script>
