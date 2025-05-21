@@ -2,7 +2,7 @@
 <div class="row prod-items prod-items-2">
     {% for producto in productos %}
     <article class="cf-sm-6 cf-md-6 cf-lg-6 col-xs-6 col-sm-6 col-md-6 col-lg-6 sectgl-item">
-        <div class="sectgl prod-i">
+        <div class="sectgl prod-i" x-data="carrito('{{ producto.id }}', '{{ producto.nombre }}')">
             <div class="prod-i-top">
                 <a class="prod-i-img" href="{% url 'web:producto' producto.id %}">
                     {% if producto.imagen %}
@@ -12,9 +12,11 @@
                     {% endif %}
                 </a>
                 <div class="prod-i-actions">
-                    <div class="prod-i-actions-in">                        
+                    <div class="prod-i-actions-in">
                         <p class="prod-i-cart">
-                            <a href="#" class="hover-label prod-addbtn" onclick="agregarAlCarrito(event, '{{ producto.id }}', '{{ producto.nombre }}')"><i class="icon ion-android-cart"></i><span>Añadir al carrito</span></a>
+                            <a href="#" class="hover-label prod-addbtn" @click.prevent="agregar">
+                                <i class="icon ion-android-cart"></i><span>Añadir al carrito</span>
+                            </a>
                         </p>
                     </div>
                 </div>
@@ -38,93 +40,71 @@
 </form>
 
 <script>
-function agregarAlCarrito(event, productoId, nombreProducto) {
-    event.preventDefault();
-    
-    // Mostrar confirmación con SweetAlert2
-    Swal.fire({
-        title: 'Añadir al carrito',
-        text: `¿Quieres añadir "${nombreProducto}" a tu carrito?`,
-        icon: 'question',        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: '✅ Sí, añadir',
-        cancelButtonText: '❌ Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Obtener el formulario y configurar la URL
-            const form = document.getElementById('add-to-cart-form');
-            form.action = '{% url "web:add_cart" 0 %}'.replace('0', productoId);
-            
-            // Enviar el formulario sin redireccionar
-            const formData = new FormData(form);
-              fetch(form.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                credentials: 'same-origin'
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Error en la respuesta del servidor: ' + response.status);
-                }
-                return response.json();
-            })
-            .then(data => {                
-                if (data.success) {
-                    // Actualizar contador del carrito si existe
-                    if (data.cart_count !== undefined) {
-                        // Actualizar el contador del carrito en el ícono
-                        const cartCountElement = document.querySelector('.h-cart-icon span');
-                        if (cartCountElement) {
-                            cartCountElement.textContent = data.cart_count;
+function carrito(id, nombre) {
+    return {
+        agregar() {
+            Swal.fire({
+                title: 'Añadir al carrito',
+                text: `¿Quieres añadir "${nombre}" a tu carrito?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: '✅ Sí, añadir',
+                cancelButtonText: '❌ Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.getElementById('add-to-cart-form');
+                    form.action = '{% url "web:add_cart" 0 %}'.replace('0', id);
+                    const formData = new FormData(form);
+
+                    fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        credentials: 'same-origin'
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Error HTTP: ' + response.status);
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            if (data.cart_count !== undefined) {
+                                const span = document.querySelector('.h-cart-icon span');
+                                if (span) span.textContent = data.cart_count;
+                                actualizarMiniCarrito();
+                            }
+                            Swal.fire({
+                                title: '¡Añadido!',
+                                text: data.message || `"${nombre}" ha sido añadido a tu carrito.`,
+                                icon: 'success',
+                                showCancelButton: true,
+                                confirmButtonText: '🛒 Ir al carrito',
+                                cancelButtonText: '🏠 Seguir comprando'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.href = '{% url "web:carrito" %}';
+                                }
+                            });
+                        } else {
+                            Swal.fire('Error', data.message || 'No se pudo añadir el producto.', 'error');
                         }
-                        
-                        // Actualizar el mini-carrito sin recargar la página
-                        actualizarMiniCarrito();
-                    }
-                      // Mostrar mensaje de éxito
-                    Swal.fire({
-                        title: '¡Añadido!',
-                        text: data.message || `"${nombreProducto}" ha sido añadido a tu carrito.`,
-                        icon: 'success',
-                        showCancelButton: true,                        
-                        confirmButtonColor: '#3085d6',
-                        cancelButtonColor: '#6c757d',
-                        confirmButtonText: '🛒 Ir al carrito',
-                        cancelButtonText: '🏠 Seguir comprando'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            // Redirigir al carrito si el usuario lo desea
-                            window.location.href = '{% url "web:carrito" %}';
-                        }
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        Swal.fire('Error', 'Ha ocurrido un problema. Intenta nuevamente.', 'error');
                     });
-                } else {
-                    // Mostrar mensaje de error si el servidor indica un problema
-                    Swal.fire(
-                        'Error',
-                        data.message || 'No se pudo añadir el producto al carrito.',
-                        'error'
-                    );
                 }
-            }).catch(error => {
-                console.error('Error:', error);
-                Swal.fire({
-                    title: 'Error',
-                    text: 'Ha ocurrido un problema al añadir el producto al carrito. Por favor, inténtalo de nuevo.',
-                    icon: 'error',
-                    confirmButtonColor: '#3085d6'
-                });            });
+            });
         }
-    });
+    }
 }
 
-// Función para actualizar el contenido del mini-carrito
 function actualizarMiniCarrito() {
-    // Hacer una petición para obtener los datos actualizados del carrito
     fetch('{% url "web:carrito" %}', {
         method: 'GET',
         headers: {
@@ -133,25 +113,24 @@ function actualizarMiniCarrito() {
     })
     .then(response => response.text())
     .then(html => {
-        // Extraer solo la parte del mini-carrito del HTML completo
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
-        
-        // Actualizar el contador en el icono del carrito
-        const cartCount = doc.querySelector('.h-cart-icon span').textContent.trim();
-        document.querySelector('.h-cart-icon span').textContent = cartCount;
-        
-        // Actualizar el subtotal en el icono del carrito
-        const cartTotal = doc.querySelector('.h-cart-total').textContent.trim();
-        document.querySelector('.h-cart-total').textContent = cartTotal;
-        
-        // Buscar el contenido del carrito en el HTML
+
+        const cartCount = doc.querySelector('.h-cart-icon span')?.textContent.trim();
+        if (cartCount) {
+            document.querySelector('.h-cart-icon span').textContent = cartCount;
+        }
+
+        const cartTotal = doc.querySelector('.h-cart-total')?.textContent.trim();
+        if (cartTotal) {
+            document.querySelector('.h-cart-total').textContent = cartTotal;
+        }
+
         const cartList = doc.querySelector('.cart_list');
         if (cartList) {
             document.querySelector('.cart_list').innerHTML = cartList.innerHTML;
         }
-        
-        // Actualizar el subtotal en el dropdown del carrito
+
         const totalElement = doc.querySelector('.widget_shopping_cart_content .total');
         if (totalElement) {
             document.querySelector('.widget_shopping_cart_content .total').innerHTML = totalElement.innerHTML;
