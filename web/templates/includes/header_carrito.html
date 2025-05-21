@@ -8,27 +8,85 @@
                 {{request.session.cart.items|length}}
             </span>
         </p>
-        <p class="h-cart-total">Q 100</p>
+        <p class="h-cart-total">Q {{request.session.cartMontoTotal}}</p>
     </a>
     <div class="widget_shopping_cart">
         <div class="widget_shopping_cart_content">
             <ul class="cart_list">
-                
-                <li>
-                    <a href="#" class="remove">&times;</a>
-                    <a href="#">
-                        <img src="{% static 'img/250x250.svg' %}" alt="Producto sin imagen" />
+                  {% for key,value in request.session.cart.items %}
+                 <li>
+                    <a href="#" class="remove" onclick="confirmarEliminarMini(event, '{{ value.producto_id }}', '{{ value.nombre }}')">&times;</a>
+                    <a href="#">                        
+                        {% if value.imagen == "" %}
+                            <img src="{% static 'img/250x250.svg' %}" alt="Producto sin imagen" />
+                        {% else %}
+                            <img src="{{ value.imagen }}" alt="">
+                        {% endif %}
+                        
+                        {{ value.nombre }}
+                        
                         Producto
                     </a>
-                    <span class="quantity">1 &times; $100</span>
+                    <span class="quantity">{{value.cantidad}} &times; {{value.subtotal}}</span>
                 </li>
                 
+                {% endfor %}
+
+
+               
+                
             </ul>
-            <p class="total"><b>Subtotal:</b> $100</p>
+            <p class="total"><b>Subtotal:</b> Q {{request.session.cartMontoTotal}}</p>
             <p class="buttons">
                 <a href="{% url 'web:carrito' %}" class="button">Ver Carrito</a>
                 <a href="#" class="button">Pedido</a>
-            </p>
-        </div>
+            </p>        </div>
     </div>
 </li>
+
+<!-- Formulario oculto para eliminar productos -->
+<form id="delete-product-mini-form" method="post" style="display: none;">
+    {% csrf_token %}
+</form>
+
+<script>
+function confirmarEliminarMini(event, id, nombre) {
+    event.preventDefault();
+    
+    // Crear y enviar formulario directamente sin confirmación
+    const form = document.getElementById('delete-product-mini-form');
+    form.action = '{% url "web:eliminarProductoCarrito" 0 %}'.replace('0', id);
+    
+    // Enviar formulario mediante AJAX
+    const formData = new FormData(form);
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Error en la respuesta del servidor');
+        }
+        // Recargar la página para actualizar el carrito
+        window.location.reload();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Mostrar un pequeño toast en caso de error
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'error',
+            title: 'Error al eliminar producto',
+            showConfirmButton: false,
+            timer: 3000
+        });
+    });
+}
+</script>
