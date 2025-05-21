@@ -6,7 +6,7 @@
         <li><a href="/">Home</a></li>
         <li>Carrito</li>
     </ul>
-    <div class="page-styling">
+    <div class="page-styling" x-data="carritoAlpine">
         <div class="woocommerce prod-litems section-list">            {% for key,value in request.session.cart.items %}
             <article class="prod-li sectls" data-producto-id="{{ value.producto_id }}">
                 <div class="prod-li-inner">
@@ -27,9 +27,9 @@
                         </div>
                         <div class="prod-li-qnt-wrap">
                             <p class="qnt-wrap prod-li-qnt">
-                                <a href="#" class="qnt-plus prod-li-plus" onclick="aumentarCantidad(event, '{{ value.producto_id }}')"><i class="icon ion-arrow-up-b"></i></a>
+                                <a href="#" class="qnt-plus prod-li-plus" @click.prevent="aumentarCantidad('{{ value.producto_id }}')"><i class="icon ion-arrow-up-b"></i></a>
                                 <input type="text" value="{{value.cantidad}}" readonly>
-                                <a href="#" class="qnt-minus prod-li-minus" onclick="disminuirCantidad(event, '{{ value.producto_id }}')"><i class="icon ion-arrow-down-b"></i></a>
+                                <a href="#" class="qnt-minus prod-li-minus" @click.prevent="disminuirCantidad('{{ value.producto_id }}')"><i class="icon ion-arrow-down-b"></i></a>
                             </p>
                         </div>
                         <div class="prod-li-total-wrap">
@@ -45,7 +45,7 @@
                             <p class="prod-li-rating-count">12</p>
                         </div>
                         <p class="prod-li-add">                                                        
-                            <a href="#" onclick="confirmarEliminar(event, '{{ value.producto_id }}', '{{ value.nombre }}')" class="button hover-label prod-addbtn"><i class="icon ion-close-round"></i><span>Eliminar</span></a>
+                            <a href="#" @click.prevent="confirmarEliminar('{{ value.producto_id }}', '{{ value.nombre }}')" class="button hover-label prod-addbtn"><i class="icon ion-close-round"></i><span>Eliminar</span></a>
                         </p>
                         <p class="prod-li-information">
                             <a href="#" class="hover-label"><i class="icon ion-more"></i><span>Show Information</span></a>
@@ -74,7 +74,7 @@
             <input type="text" placeholder="Código Cupon">
             <input type="submit" class="button" value="Aplicar">
         </div>        <div class="cart-collaterals">
-            <a href="#" onclick="confirmarLimpiarCarrito(event)" class="checkout-button button" style="margin-left: 10px; display: inline-block;">Limpiar Carrito</a>
+            <a href="#" @click.prevent="confirmarLimpiarCarrito" class="checkout-button button" style="margin-left: 10px; display: inline-block;">Limpiar Carrito</a>
             <a href="#" class="checkout-button button">Realizar Pedido</a>
             <div class="order-total">
                 <p class="cart-totals-ttl">Total</p>
@@ -86,210 +86,215 @@
 </div>
 
 <script>
-// Función para obtener el token CSRF de las cookies
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            // ¿Este cookie tiene el nombre que buscamos?
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-const csrftoken = getCookie('csrftoken');
-
-function confirmarEliminar(event, id, nombre) {
-    event.preventDefault(); // Detiene la acción predeterminada del enlace
-      Swal.fire({
-        title: '¿Eliminar producto?',
-        text: "¿Quieres eliminar '" + nombre + "' del carrito?",
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#ff3100',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar',
-        reverseButtons: true
-    }).then((result) => {        if (result.isConfirmed) {
-            // Para mayor seguridad, creamos una forma de POST para eliminar el producto
-            var form = document.createElement('form');
-            form.method = 'POST';
-            form.action = "{% url 'web:eliminarProductoCarrito' 0 %}".replace("0", id);
-            
-            // Añadir el token CSRF
-            var csrfToken = document.createElement('input');
-            csrfToken.type = 'hidden';
-            csrfToken.name = 'csrfmiddlewaretoken';
-            csrfToken.value = '{{ csrf_token }}';
-            form.appendChild(csrfToken);
-            
-            document.body.appendChild(form);
-            form.submit();
-        }    });
-}
-
-function confirmarLimpiarCarrito(event) {
-    event.preventDefault(); // Detiene la acción predeterminada del enlace
-    
-    Swal.fire({
-        title: '¿Limpiar carrito?',
-        text: "Se eliminarán todos los productos del carrito",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ff3100',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Sí, limpiar',
-        cancelButtonText: 'Cancelar',
-        reverseButtons: true
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Para mayor seguridad, creamos una forma de POST para limpiar el carrito
-            var form = document.createElement('form');
-            form.method = 'POST';
-            form.action = "{% url 'web:limpiarCarrito' %}";
-            
-            // Añadir el token CSRF
-            var csrfToken = document.createElement('input');
-            csrfToken.type = 'hidden';
-            csrfToken.name = 'csrfmiddlewaretoken';
-            csrfToken.value = '{{ csrf_token }}';
-            form.appendChild(csrfToken);
-            
-            document.body.appendChild(form);
-            form.submit();
-        }
-    });
-}
-
-// Función para aumentar la cantidad de un producto
-function aumentarCantidad(event, id) {
-    event.preventDefault();
-    
-    // Configurar la solicitud como AJAX
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', "{% url 'web:aumentarCantidad' 0 %}".replace("0", id), true);
-    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-    xhr.setRequestHeader('X-CSRFToken', csrftoken);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.onload = function() {
-        if (xhr.status === 200) {
-            var response = JSON.parse(xhr.responseText);
-            if (response.success) {
-                // Actualizar la cantidad y el subtotal en la interfaz
-                var itemRow = document.querySelector(`[data-producto-id="${id}"]`);
-                if (itemRow) {
-                    var cantidadInput = itemRow.querySelector('input[type="text"]');
-                    var subtotalElement = itemRow.querySelector('.prod-li-total');
-                    var totalElement = document.querySelector('.cart-totals-val');
-                      cantidadInput.value = response.cantidad;
-                    subtotalElement.textContent = 'Q ' + response.subtotal;
-                    totalElement.textContent = 'Q ' + response.cart_total;
-                    
-                    // Actualizar el mini-carrito
-                    actualizarMiniCarrito();
-                }
-            }
-        }
-    };
-    xhr.send();
-}
-
-// Función para disminuir la cantidad de un producto
-function disminuirCantidad(event, id) {
-    event.preventDefault();
-    
-    // Configurar la solicitud como AJAX
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', "{% url 'web:disminuirCantidad' 0 %}".replace("0", id), true);
-    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-    xhr.setRequestHeader('X-CSRFToken', csrftoken);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.onload = function() {
-        if (xhr.status === 200) {
-            var response = JSON.parse(xhr.responseText);
-            if (response.success) {                if (response.eliminado) {
-                    // Si el producto fue eliminado, actualizar primero el mini-carrito
-                    actualizarMiniCarrito(() => {
-                        // Luego recargar la página
-                        location.reload();
-                    });
-                } else {
-                    // Actualizar la cantidad y el subtotal en la interfaz
-                    var itemRow = document.querySelector(`[data-producto-id="${id}"]`);
-                    if (itemRow) {
-                        var cantidadInput = itemRow.querySelector('input[type="text"]');
-                        var subtotalElement = itemRow.querySelector('.prod-li-total');
-                        var totalElement = document.querySelector('.cart-totals-val');
-                          cantidadInput.value = response.cantidad;
-                        subtotalElement.textContent = 'Q ' + response.subtotal;
-                        totalElement.textContent = 'Q ' + response.cart_total;
-                        
-                        // Actualizar el mini-carrito
-                        actualizarMiniCarrito();
-                        
-                        // // Mostrar mensaje de éxito
-                        // Swal.fire({
-                        //     title: 'Cantidad actualizada',
-                        //     text: response.message,
-                        //     icon: 'success',
-                        //     timer: 1500,
-                        //     showConfirmButton: false
-                        // });
+document.addEventListener('alpine:init', () => {
+    Alpine.data('carritoAlpine', () => ({
+        // Inicialización
+        init() {
+            // No necesitamos inicializar nada adicional aquí
+        },
+        
+        // Función para obtener el token CSRF de las cookies
+        getCsrfToken() {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, 'csrftoken'.length + 1) === ('csrftoken' + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring('csrftoken'.length + 1));
+                        break;
                     }
                 }
             }
-        }    };    xhr.send();
-}
-
-// Función para actualizar el mini-carrito
-function actualizarMiniCarrito(callback) {
-    fetch('{% url "web:carrito" %}', {
-        method: 'GET',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
+            return cookieValue;
+        },
+        
+        // Función para confirmar la eliminación de un producto
+        confirmarEliminar(id, nombre) {
+            Swal.fire({
+                title: '¿Eliminar producto?',
+                text: `¿Quieres eliminar '${nombre}' del carrito?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#ff3100',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Para mayor seguridad, creamos una forma de POST para eliminar el producto
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = "{% url 'web:eliminarProductoCarrito' 0 %}".replace("0", id);
+                    
+                    // Añadir el token CSRF
+                    const csrfToken = document.createElement('input');
+                    csrfToken.type = 'hidden';
+                    csrfToken.name = 'csrfmiddlewaretoken';
+                    csrfToken.value = '{{ csrf_token }}';
+                    form.appendChild(csrfToken);
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        },
+        
+        // Función para confirmar la limpieza del carrito
+        confirmarLimpiarCarrito() {
+            Swal.fire({
+                title: '¿Limpiar carrito?',
+                text: "Se eliminarán todos los productos del carrito",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ff3100',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, limpiar',
+                cancelButtonText: 'Cancelar',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Para mayor seguridad, creamos una forma de POST para limpiar el carrito
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = "{% url 'web:limpiarCarrito' %}";
+                    
+                    // Añadir el token CSRF
+                    const csrfToken = document.createElement('input');
+                    csrfToken.type = 'hidden';
+                    csrfToken.name = 'csrfmiddlewaretoken';
+                    csrfToken.value = '{{ csrf_token }}';
+                    form.appendChild(csrfToken);
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        },
+        
+        // Función para aumentar la cantidad de un producto
+        aumentarCantidad(id) {
+            // Configurar la solicitud con fetch (más moderno que XMLHttpRequest)
+            fetch("{% url 'web:aumentarCantidad' 0 %}".replace("0", id), {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': this.getCsrfToken(),
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Actualizar la cantidad y el subtotal en la interfaz
+                    const itemRow = document.querySelector(`[data-producto-id="${id}"]`);
+                    if (itemRow) {
+                        const cantidadInput = itemRow.querySelector('input[type="text"]');
+                        const subtotalElement = itemRow.querySelector('.prod-li-total');
+                        const totalElement = document.querySelector('.cart-totals-val');
+                        
+                        cantidadInput.value = data.cantidad;
+                        subtotalElement.textContent = 'Q ' + data.subtotal;
+                        totalElement.textContent = 'Q ' + data.cart_total;
+                        
+                        // Actualizar el mini-carrito
+                        this.actualizarMiniCarrito();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error al aumentar cantidad:', error);
+            });
+        },
+        
+        // Función para disminuir la cantidad de un producto
+        disminuirCantidad(id) {
+            fetch("{% url 'web:disminuirCantidad' 0 %}".replace("0", id), {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': this.getCsrfToken(),
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.eliminado) {
+                        // Si el producto fue eliminado, actualizar primero el mini-carrito
+                        this.actualizarMiniCarrito(() => {
+                            // Luego recargar la página
+                            location.reload();
+                        });
+                    } else {
+                        // Actualizar la cantidad y el subtotal en la interfaz
+                        const itemRow = document.querySelector(`[data-producto-id="${id}"]`);
+                        if (itemRow) {
+                            const cantidadInput = itemRow.querySelector('input[type="text"]');
+                            const subtotalElement = itemRow.querySelector('.prod-li-total');
+                            const totalElement = document.querySelector('.cart-totals-val');
+                            
+                            cantidadInput.value = data.cantidad;
+                            subtotalElement.textContent = 'Q ' + data.subtotal;
+                            totalElement.textContent = 'Q ' + data.cart_total;
+                            
+                            // Actualizar el mini-carrito
+                            this.actualizarMiniCarrito();
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error al disminuir cantidad:', error);
+            });
+        },
+        
+        // Función para actualizar el mini-carrito
+        actualizarMiniCarrito(callback) {
+            fetch('{% url "web:carrito" %}', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                // Extraer solo la parte del mini-carrito del HTML completo
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Actualizar el contador
+                const cartCount = doc.querySelector('.h-cart-icon span').textContent.trim();
+                document.querySelector('.h-cart-icon span').textContent = cartCount;
+                
+                // Actualizar el subtotal en el icono del carrito
+                const cartTotal = doc.querySelector('.h-cart-total').textContent.trim();
+                document.querySelector('.h-cart-total').textContent = cartTotal;
+                
+                // Actualizar la lista de productos
+                const cartList = doc.querySelector('.cart_list');
+                if (cartList) {
+                    document.querySelector('.cart_list').innerHTML = cartList.innerHTML;
+                }
+                
+                // Actualizar el total dentro del dropdown
+                const totalElement = doc.querySelector('.widget_shopping_cart_content .total');
+                if (totalElement) {
+                    document.querySelector('.widget_shopping_cart_content .total').innerHTML = totalElement.innerHTML;
+                }
+                
+                // Ejecutar el callback si existe
+                if (typeof callback === 'function') {
+                    callback();
+                }
+            })
+            .catch(error => {
+                console.error('Error al actualizar el mini-carrito:', error);
+            });
         }
-    })
-    .then(response => response.text())
-    .then(html => {
-        // Extraer solo la parte del mini-carrito del HTML completo
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        
-        // Actualizar el contador
-        const cartCount = doc.querySelector('.h-cart-icon span').textContent.trim();
-        document.querySelector('.h-cart-icon span').textContent = cartCount;
-        
-        // Actualizar el subtotal en el icono del carrito
-        const cartTotal = doc.querySelector('.h-cart-total').textContent.trim();
-        document.querySelector('.h-cart-total').textContent = cartTotal;
-        
-        // Actualizar la lista de productos
-        const cartList = doc.querySelector('.cart_list');
-        if (cartList) {
-            document.querySelector('.cart_list').innerHTML = cartList.innerHTML;
-        }
-        
-        // Actualizar el total dentro del dropdown
-        const totalElement = doc.querySelector('.widget_shopping_cart_content .total');
-        if (totalElement) {
-            document.querySelector('.widget_shopping_cart_content .total').innerHTML = totalElement.innerHTML;
-        }
-        
-        // Ejecutar el callback si existe
-        if (typeof callback === 'function') {
-            callback();
-        }
-    })
-    .catch(error => {
-        console.error('Error al actualizar el mini-carrito:', error);
-    });
-}
+    }));
+});
 </script>
 
 
