@@ -1,5 +1,5 @@
 {% load static %}
-<div class="row prod-items prod-items-2">
+<div class="row prod-items prod-items-2" x-data="catalogoUtils">
     {% for producto in productos %}
     <article class="cf-sm-6 cf-md-6 cf-lg-6 col-xs-6 col-sm-6 col-md-6 col-lg-6 sectgl-item">
         <div class="sectgl prod-i" x-data="carrito('{{ producto.id }}', '{{ producto.nombre }}')">
@@ -40,6 +40,66 @@
 </form>
 
 <script>
+document.addEventListener('alpine:init', () => {
+    // Función para actualizar el mini-carrito - definida una sola vez para evitar duplicación
+    const actualizarMiniCarritoFn = () => {
+        return fetch('{% url "web:carrito" %}', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            const cartCount = doc.querySelector('.h-cart-icon span')?.textContent.trim();
+            if (cartCount) {
+                document.querySelector('.h-cart-icon span').textContent = cartCount;
+            }
+
+            const cartTotal = doc.querySelector('.h-cart-total')?.textContent.trim();
+            if (cartTotal) {
+                document.querySelector('.h-cart-total').textContent = cartTotal;
+            }
+
+            const cartList = doc.querySelector('.cart_list');
+            if (cartList) {
+                document.querySelector('.cart_list').innerHTML = cartList.innerHTML;
+            }
+
+            const totalElement = doc.querySelector('.widget_shopping_cart_content .total');
+            if (totalElement) {
+                document.querySelector('.widget_shopping_cart_content .total').innerHTML = totalElement.innerHTML;
+            }
+        })
+        .catch(error => {
+            console.error('Error al actualizar el mini-carrito:', error);
+        });
+    };
+    
+    // Crear un store global para compartir el método entre componentes
+    Alpine.store('catalogoUtils', {
+        actualizarMiniCarrito() {
+            return actualizarMiniCarritoFn();
+        }
+    });
+    
+    // Definimos el componente para usar con x-data
+    Alpine.data('catalogoUtils', () => ({
+        init() {
+            // Escuchamos el evento personalizado para actualizar el mini-carrito
+            document.addEventListener('actualizar-mini-carrito', () => {
+                actualizarMiniCarritoFn();
+            });
+        },
+        actualizarMiniCarrito() {
+            return actualizarMiniCarritoFn();
+        }
+    }));
+});
+
 function carrito(id, nombre) {
     return {
         agregar() {
@@ -72,11 +132,17 @@ function carrito(id, nombre) {
                         return response.json();
                     })
                     .then(data => {
-                        if (data.success) {
+                        if (data.success) {                            
                             if (data.cart_count !== undefined) {
                                 const span = document.querySelector('.h-cart-icon span');
                                 if (span) span.textContent = data.cart_count;
-                                actualizarMiniCarrito();
+                                // Usar el componente Alpine para actualizar el mini-carrito
+                                if (Alpine.store('catalogoUtils')) {
+                                    Alpine.store('catalogoUtils').actualizarMiniCarrito();
+                                } else {
+                                    // Forma alternativa de actualizar sin usar el store
+                                    document.dispatchEvent(new CustomEvent('actualizar-mini-carrito'));
+                                }
                             }
                             Swal.fire({
                                 title: '¡Añadido!',
@@ -102,42 +168,5 @@ function carrito(id, nombre) {
             });
         }
     }
-}
-
-function actualizarMiniCarrito() {
-    fetch('{% url "web:carrito" %}', {
-        method: 'GET',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(response => response.text())
-    .then(html => {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-
-        const cartCount = doc.querySelector('.h-cart-icon span')?.textContent.trim();
-        if (cartCount) {
-            document.querySelector('.h-cart-icon span').textContent = cartCount;
-        }
-
-        const cartTotal = doc.querySelector('.h-cart-total')?.textContent.trim();
-        if (cartTotal) {
-            document.querySelector('.h-cart-total').textContent = cartTotal;
-        }
-
-        const cartList = doc.querySelector('.cart_list');
-        if (cartList) {
-            document.querySelector('.cart_list').innerHTML = cartList.innerHTML;
-        }
-
-        const totalElement = doc.querySelector('.widget_shopping_cart_content .total');
-        if (totalElement) {
-            document.querySelector('.widget_shopping_cart_content .total').innerHTML = totalElement.innerHTML;
-        }
-    })
-    .catch(error => {
-        console.error('Error al actualizar el mini-carrito:', error);
-    });
 }
 </script>
