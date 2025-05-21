@@ -1,5 +1,5 @@
 {% load static %}
-<li class="h-cart">
+<li class="h-cart" x-data="miniCarritoAlpine">
     <a class="cart-contents" href="{% url 'web:carrito' %}" title="Carrito" 
     data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
         <p class="h-cart-icon">
@@ -15,7 +15,7 @@
             <ul class="cart_list">
                   {% for key,value in request.session.cart.items %}
                  <li>
-                    <a href="#" class="remove" onclick="confirmarEliminarMini(event, '{{ value.producto_id }}', '{{ value.nombre }}')">&times;</a>
+                    <a href="#" class="remove" @click.prevent="eliminarProducto('{{ value.producto_id }}', '{{ value.nombre }}')">&times;</a>
                     <a href="#">                        
                         {% if value.imagen == "" %}
                             <img src="{% static 'img/250x250.svg' %}" alt="Producto sin imagen" />
@@ -31,10 +31,6 @@
                 </li>
                 
                 {% endfor %}
-
-
-               
-                
             </ul>
             <p class="total"><b>Subtotal:</b> Q {{request.session.cartMontoTotal}}</p>
             <p class="buttons">
@@ -50,73 +46,85 @@
 </form>
 
 <script>
-function confirmarEliminarMini(event, id, nombre) {
-    event.preventDefault();
-    
-    // Crear y enviar formulario directamente sin confirmación
-    const form = document.getElementById('delete-product-mini-form');
-    form.action = '{% url "web:eliminarProductoCarrito" 0 %}'.replace('0', id);
-    
-    // Enviar formulario mediante AJAX
-    const formData = new FormData(form);
-    
-    fetch(form.action, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': '{{ csrf_token }}'
+document.addEventListener('alpine:init', () => {
+    Alpine.data('miniCarritoAlpine', () => ({
+        // Método para eliminar un producto del mini-carrito
+        eliminarProducto(id, nombre) {
+            // Crear y enviar formulario directamente sin confirmación
+            const form = document.getElementById('delete-product-mini-form');
+            form.action = '{% url "web:eliminarProductoCarrito" 0 %}'.replace('0', id);
+            
+            // Enviar formulario mediante AJAX
+            const formData = new FormData(form);
+            
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la respuesta del servidor');
+                }
+                // No recargar la página, solo actualizar el carrito
+                this.actualizarMiniCarrito();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Mostrar un pequeño toast en caso de error
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'error',
+                    title: 'Error al eliminar producto',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+            });
         },
-        credentials: 'same-origin'
-    })    .then(response => {
-        if (!response.ok) {
-            throw new Error('Error en la respuesta del servidor');
+        
+        // Método para actualizar el mini-carrito después de cambios
+        actualizarMiniCarrito() {
+            fetch('{% url "web:carrito" %}', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                // Extraer solo la parte del mini-carrito del HTML completo
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Actualizar el contador
+                const cartCount = doc.querySelector('.h-cart-icon span').textContent.trim();
+                document.querySelector('.h-cart-icon span').textContent = cartCount;
+                
+                // Actualizar el subtotal en el icono del carrito
+                const cartTotal = doc.querySelector('.h-cart-total').textContent.trim();
+                document.querySelector('.h-cart-total').textContent = cartTotal;
+                
+                // Actualizar la lista de productos
+                const cartList = doc.querySelector('.cart_list');
+                if (cartList) {
+                    document.querySelector('.cart_list').innerHTML = cartList.innerHTML;
+                }
+                
+                // Actualizar el total dentro del dropdown
+                const totalElement = doc.querySelector('.widget_shopping_cart_content .total');
+                if (totalElement) {
+                    document.querySelector('.widget_shopping_cart_content .total').innerHTML = totalElement.innerHTML;
+                }
+            })
+            .catch(error => {
+                console.error('Error al actualizar el mini-carrito:', error);
+            });
         }
-        // No recargar la página, solo actualizar el carrito
-        // Actualizar el contador del carrito
-        fetch('{% url "web:carrito" %}', {
-            method: 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.text())        .then(html => {
-            // Extraer solo la parte del mini-carrito del HTML completo
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            
-            // Actualizar el contador
-            const cartCount = doc.querySelector('.h-cart-icon span').textContent.trim();
-            document.querySelector('.h-cart-icon span').textContent = cartCount;
-            
-            // Actualizar el subtotal en el icono del carrito
-            const cartTotal = doc.querySelector('.h-cart-total').textContent.trim();
-            document.querySelector('.h-cart-total').textContent = cartTotal;
-            
-            // Actualizar la lista de productos
-            const cartList = doc.querySelector('.cart_list');
-            if (cartList) {
-                document.querySelector('.cart_list').innerHTML = cartList.innerHTML;
-            }
-            
-            // Actualizar el total dentro del dropdown
-            const totalElement = doc.querySelector('.widget_shopping_cart_content .total');
-            if (totalElement) {
-                document.querySelector('.widget_shopping_cart_content .total').innerHTML = totalElement.innerHTML;
-            }
-        });
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        // Mostrar un pequeño toast en caso de error
-        Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: 'error',
-            title: 'Error al eliminar producto',
-            showConfirmButton: false,
-            timer: 3000
-        });
-    });
-}
+    }));
+});
 </script>
